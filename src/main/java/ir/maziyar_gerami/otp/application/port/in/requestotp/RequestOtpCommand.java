@@ -1,4 +1,4 @@
-package ir.maziyar_gerami.otp.application.port.in;
+package ir.maziyar_gerami.otp.application.port.in.requestotp;
 
 import ir.maziyar_gerami.otp.domain.PhoneNumber;
 

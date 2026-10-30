@@ -1,7 +1,10 @@
-package ir.maziyar_gerami.otp.application.service;
+package ir.maziyar_gerami.otp.application.service.verifyotp;
 
-import ir.maziyar_gerami.otp.application.port.in.*;
-import ir.maziyar_gerami.otp.application.port.out.*;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpCommand;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpResult;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpUseCase;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpCodec;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpStorePort;
 import ir.maziyar_gerami.otp.domain.*;
 
 public final class VerifyOtpService implements VerifyOtpUseCase {

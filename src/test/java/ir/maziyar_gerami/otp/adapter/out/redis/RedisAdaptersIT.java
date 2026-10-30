@@ -1,9 +1,10 @@
 package ir.maziyar_gerami.otp.adapter.out.redis;
 
 import ir.maziyar_gerami.otp.adapter.out.security.PlainTextOtpCodec;
-import ir.maziyar_gerami.otp.application.port.in.VerifyOtpCommand;
-import ir.maziyar_gerami.otp.application.port.out.*;
-import ir.maziyar_gerami.otp.application.service.VerifyOtpService;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpCommand;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpStorePort;
+import ir.maziyar_gerami.otp.application.port.out.ratelimit.RateLimiterPort;
+import ir.maziyar_gerami.otp.application.service.verifyotp.VerifyOtpService;
 import ir.maziyar_gerami.otp.domain.*;
 import java.time.*;
 import java.util.*;

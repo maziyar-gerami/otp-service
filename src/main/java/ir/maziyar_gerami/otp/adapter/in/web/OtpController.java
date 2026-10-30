@@ -1,7 +1,11 @@
 package ir.maziyar_gerami.otp.adapter.in.web;
 
-import ir.maziyar_gerami.otp.application.port.in.RequestOtpUseCase;
-import ir.maziyar_gerami.otp.application.port.in.VerifyOtpUseCase;
+import ir.maziyar_gerami.otp.adapter.in.web.requestotp.RequestOtpRequest;
+import ir.maziyar_gerami.otp.adapter.in.web.requestotp.RequestOtpResponse;
+import ir.maziyar_gerami.otp.adapter.in.web.verifyotp.VerifyOtpRequest;
+import ir.maziyar_gerami.otp.adapter.in.web.verifyotp.VerifyOtpResponse;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpUseCase;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

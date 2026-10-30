@@ -1,7 +1,10 @@
 package ir.maziyar_gerami.otp.application.service;
 
-import ir.maziyar_gerami.otp.application.port.in.*;
-import ir.maziyar_gerami.otp.application.port.out.*;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpCommand;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpResult;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpCodec;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpStorePort;
+import ir.maziyar_gerami.otp.application.service.verifyotp.VerifyOtpService;
 import ir.maziyar_gerami.otp.domain.*;
 import java.time.*;
 import java.util.Optional;
@@ -17,8 +20,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class VerifyOtpServiceTest {
-    @Mock OtpStorePort store;
-    @Mock OtpCodec codec;
+    @Mock
+    OtpStorePort store;
+    @Mock
+    OtpCodec codec;
     final PhoneNumber phone = new PhoneNumber("+989121234567");
     final OtpCode code = new OtpCode("123456");
     final StoredOtp otp = new StoredOtp("version", "encoded", 0, Instant.EPOCH);

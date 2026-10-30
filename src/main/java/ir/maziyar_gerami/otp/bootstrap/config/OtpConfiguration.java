@@ -3,9 +3,15 @@ package ir.maziyar_gerami.otp.bootstrap.config;
 import ir.maziyar_gerami.otp.adapter.out.redis.*;
 import ir.maziyar_gerami.otp.adapter.out.security.*;
 import ir.maziyar_gerami.otp.adapter.out.sms.*;
-import ir.maziyar_gerami.otp.application.port.in.*;
-import ir.maziyar_gerami.otp.application.port.out.*;
-import ir.maziyar_gerami.otp.application.service.*;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpUseCase;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpUseCase;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpCodec;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpGeneratorPort;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpSenderPort;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpStorePort;
+import ir.maziyar_gerami.otp.application.port.out.ratelimit.RateLimiterPort;
+import ir.maziyar_gerami.otp.application.service.requestotp.RequestOtpService;
+import ir.maziyar_gerami.otp.application.service.verifyotp.VerifyOtpService;
 import ir.maziyar_gerami.otp.domain.OtpPolicy;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -63,7 +69,7 @@ public class OtpConfiguration {
 
     @Bean
     public RequestOtpUseCase requestOtp(OtpStorePort store, OtpSenderPort sender, OtpGeneratorPort generator,
-                                       RateLimiterPort limiter, OtpCodec codec, OtpPolicy policy, Clock clock) {
+                                        RateLimiterPort limiter, OtpCodec codec, OtpPolicy policy, Clock clock) {
         return new RequestOtpService(store, sender, generator, limiter, codec, policy, clock);
     }
 

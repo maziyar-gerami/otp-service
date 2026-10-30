@@ -1,4 +1,4 @@
-package ir.maziyar_gerami.otp.application.port.out;
+package ir.maziyar_gerami.otp.application.port.out.otp;
 
 import ir.maziyar_gerami.otp.domain.OtpCode;
 

@@ -1,6 +1,6 @@
 package ir.maziyar_gerami.otp.adapter.out.security;
 
-import ir.maziyar_gerami.otp.application.port.out.OtpCodec;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpCodec;
 import ir.maziyar_gerami.otp.domain.OtpCode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

@@ -1,6 +1,6 @@
 package ir.maziyar_gerami.otp.adapter.out.redis;
 
-import ir.maziyar_gerami.otp.application.port.out.RateLimiterPort;
+import ir.maziyar_gerami.otp.application.port.out.ratelimit.RateLimiterPort;
 import ir.maziyar_gerami.otp.domain.PhoneNumber;
 import java.time.Duration;
 import java.util.List;

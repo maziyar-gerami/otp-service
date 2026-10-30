@@ -1,6 +1,6 @@
 package ir.maziyar_gerami.otp.adapter.out.sms;
 
-import ir.maziyar_gerami.otp.application.port.out.OtpSenderPort;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpSenderPort;
 import ir.maziyar_gerami.otp.domain.OtpCode;
 import ir.maziyar_gerami.otp.domain.PhoneNumber;
 import java.time.Duration;

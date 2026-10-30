@@ -1,7 +1,7 @@
 package ir.maziyar_gerami.otp.bootstrap.config;
 
 import ir.maziyar_gerami.otp.adapter.out.sms.*;
-import ir.maziyar_gerami.otp.application.port.out.OtpSenderPort;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpSenderPort;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
 import java.net.URI;

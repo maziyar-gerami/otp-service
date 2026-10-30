@@ -1,4 +1,4 @@
-package ir.maziyar_gerami.otp.application.port.out;
+package ir.maziyar_gerami.otp.application.port.out.ratelimit;
 
 import ir.maziyar_gerami.otp.domain.PhoneNumber;
 import java.time.Duration;

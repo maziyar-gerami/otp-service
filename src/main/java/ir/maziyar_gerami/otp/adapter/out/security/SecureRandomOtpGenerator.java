@@ -1,6 +1,6 @@
 package ir.maziyar_gerami.otp.adapter.out.security;
 
-import ir.maziyar_gerami.otp.application.port.out.OtpGeneratorPort;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpGeneratorPort;
 import ir.maziyar_gerami.otp.domain.OtpCode;
 import java.security.SecureRandom;
 

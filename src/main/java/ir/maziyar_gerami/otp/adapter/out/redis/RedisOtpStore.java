@@ -1,6 +1,6 @@
 package ir.maziyar_gerami.otp.adapter.out.redis;
 
-import ir.maziyar_gerami.otp.application.port.out.OtpStorePort;
+import ir.maziyar_gerami.otp.application.port.out.otp.OtpStorePort;
 import ir.maziyar_gerami.otp.domain.PhoneNumber;
 import ir.maziyar_gerami.otp.domain.StoredOtp;
 import java.time.Duration;

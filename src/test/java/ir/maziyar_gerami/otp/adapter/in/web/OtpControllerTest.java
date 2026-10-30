@@ -1,6 +1,13 @@
 package ir.maziyar_gerami.otp.adapter.in.web;
 
-import ir.maziyar_gerami.otp.application.port.in.*;
+import ir.maziyar_gerami.otp.adapter.in.web.requestotp.RequestOtpRequest;
+import ir.maziyar_gerami.otp.adapter.in.web.verifyotp.VerifyOtpRequest;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpCommand;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpResult;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpUseCase;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpCommand;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpResult;
+import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpUseCase;
 import ir.maziyar_gerami.otp.bootstrap.OtpApplication;
 import ir.maziyar_gerami.otp.domain.*;
 import org.junit.jupiter.api.Test;
@@ -23,8 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(classes = OtpApplication.class)
 class OtpControllerTest {
     @Autowired MockMvc mvc;
-    @MockitoBean RequestOtpUseCase requestOtp;
-    @MockitoBean VerifyOtpUseCase verifyOtp;
+    @MockitoBean
+    RequestOtpUseCase requestOtp;
+    @MockitoBean
+    VerifyOtpUseCase verifyOtp;
     static final String PHONE = "+989121234567";
     static final String REQUEST = "{\"phoneNumber\":\"+989121234567\"}";
     static final String VERIFY = "{\"phoneNumber\":\"+989121234567\",\"code\":\"123456\"}";
