@@ -26,7 +26,7 @@ public final class RedisOtpStore implements OtpStorePort {
     public boolean save(PhoneNumber phone, StoredOtp otp, Duration ttl) {
         Long result = redis.execute(SAVE, List.of(keys.otp(phone), keys.cooldown(phone)),
                 otp.version(), otp.encodedCode(), Integer.toString(otp.attempts()),
-                otp.issuedAt().toString(), Long.toString(ttl.toMillis()));
+                otp.issuedAt().toString(), Long.toString(ttl.toMillis()), Integer.toString(otp.codeLength()));
         return Long.valueOf(1).equals(result);
     }
 
@@ -36,8 +36,12 @@ public final class RedisOtpStore implements OtpStorePort {
         if (values.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new StoredOtp(values.get("version"), values.get("code"),
-                Integer.parseInt(values.get("attempts")), Instant.parse(values.get("issuedAt"))));
+        String encodedCode = values.get("code");
+        // Existing entries predate length metadata and contain plaintext codes.
+        int codeLength = values.containsKey("codeLength")
+                ? Integer.parseInt(values.get("codeLength")) : encodedCode.length();
+        return Optional.of(new StoredOtp(values.get("version"), encodedCode,
+                Integer.parseInt(values.get("attempts")), Instant.parse(values.get("issuedAt")), codeLength));
     }
 
     @Override

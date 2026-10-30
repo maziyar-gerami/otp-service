@@ -46,6 +46,19 @@ class DevOtpFlowIT {
     }
 
     @Test
+    void requestLengthOverridesConfiguredDefaultAndReturnedCodeVerifies() throws Exception {
+        when(generator.generate(6)).thenReturn(new OtpCode("001234"));
+        String request = "{\"phoneNumber\":\"+989121234507\",\"codeLength\":6}";
+        mvc.perform(post("/api/v1/otp/request").contentType("application/json").content(request))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("001234"));
+        mvc.perform(post("/api/v1/otp/verify").contentType("application/json")
+                        .content("{\"phoneNumber\":\"+989121234507\",\"code\":\"001234\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.verified").value(true));
+        verify(generator).generate(6);
+        verifyNoInteractions(sender);
+    }
+
+    @Test
     void returnsExactConfiguredLengthCodeWithoutSmsAndVerifiesItOnlyOnce() throws Exception {
         when(generator.generate(8)).thenReturn(new OtpCode("00123456"));
         String request = "{\"phoneNumber\":\"+989121234506\"}";

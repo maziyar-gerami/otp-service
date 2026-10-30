@@ -50,6 +50,33 @@ class OtpControllerTest {
     }
 
     @Test
+    void forwardsRequestedCodeLengthToUseCase() throws Exception {
+        when(requestOtp.request(any())).thenReturn(new RequestOtpResult(120, 60, new OtpCode("00123456")));
+        mvc.perform(post("/api/v1/otp/request").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"+989121234567\",\"codeLength\":8}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("00123456"));
+        verify(requestOtp).request(new RequestOtpCommand(new PhoneNumber(PHONE), 8));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "3", "11", "8.5", "true", "\"not-a-number\""})
+    void rejectsInvalidRequestedCodeLength(String length) throws Exception {
+        mvc.perform(post("/api/v1/otp/request").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"+989121234567\",\"codeLength\":" + length + "}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        verifyNoInteractions(requestOtp);
+    }
+
+    @Test
+    void nullRequestedLengthUsesConfiguredDefault() throws Exception {
+        when(requestOtp.request(any())).thenReturn(new RequestOtpResult(120, 60));
+        mvc.perform(post("/api/v1/otp/request").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phoneNumber\":\"+989121234567\",\"codeLength\":null}"))
+                .andExpect(status().isOk());
+        verify(requestOtp).request(new RequestOtpCommand(new PhoneNumber(PHONE), null));
+    }
+
+    @Test
     void developmentResultReturnsExactCodeIncludingLeadingZeros() throws Exception {
         when(requestOtp.request(any())).thenReturn(new RequestOtpResult(120, 60, new OtpCode("001234")));
         mvc.perform(post("/api/v1/otp/request").contentType(MediaType.APPLICATION_JSON).content(REQUEST))

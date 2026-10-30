@@ -44,6 +44,10 @@ public final class RequestOtpService implements RequestOtpUseCase {
 
     @Override
     public RequestOtpResult request(RequestOtpCommand command) {
+        int codeLength = command.codeLength() == null ? policy.codeLength() : command.codeLength();
+        if (codeLength < 4 || codeLength > 10) {
+            throw new OtpException(ErrorCode.VALIDATION_ERROR, "Code length must be between 4 and 10.");
+        }
         var phone = command.phoneNumber();
         String version = UUID.randomUUID().toString();
         var admission = limiter.acquire(phone, version, policy.resendCooldown(),
@@ -56,8 +60,8 @@ public final class RequestOtpService implements RequestOtpUseCase {
             case ALLOWED -> { }
         }
         try {
-            OtpCode code = generator.generate(policy.codeLength());
-            if (!store.save(phone, new StoredOtp(version, codec.encode(code), 0, clock.instant()), policy.ttl())) {
+            OtpCode code = generator.generate(codeLength);
+            if (!store.save(phone, new StoredOtp(version, codec.encode(code), 0, clock.instant(), codeLength), policy.ttl())) {
                 throw new OtpException(ErrorCode.OTP_SERVICE_UNAVAILABLE, "OTP issuance reservation expired.");
             }
             if (deliveryMode == OtpDeliveryMode.DEVELOPMENT_RESPONSE) {

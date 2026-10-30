@@ -14,7 +14,7 @@ public final class OtpWebMapper {
     private OtpWebMapper() {}
 
     public static RequestOtpCommand command(RequestOtpRequest request) {
-        return new RequestOtpCommand(new PhoneNumber(request.phoneNumber()));
+        return new RequestOtpCommand(new PhoneNumber(request.phoneNumber()), request.codeLength());
     }
 
     public static VerifyOtpCommand command(VerifyOtpRequest request) {

@@ -21,11 +21,11 @@ public final class VerifyOtpService implements VerifyOtpUseCase {
 
     @Override
     public VerifyOtpResult verify(VerifyOtpCommand command) {
-        if (command.code().value().length() != policy.codeLength()) {
-            throw new OtpException(ErrorCode.VALIDATION_ERROR, "Code length does not match the configured OTP length.");
-        }
         for (int retry = 0; retry < MAX_CONTENTION_RETRIES; retry++) {
             var snapshot = store.find(command.phoneNumber()).orElseThrow(VerifyOtpService::notFound);
+            if (command.code().value().length() != snapshot.codeLength()) {
+                throw new OtpException(ErrorCode.VALIDATION_ERROR, "Code length does not match the issued OTP length.");
+            }
             boolean matched = codec.matches(command.code(), snapshot.encodedCode());
             var outcome = store.completeVerification(command.phoneNumber(), snapshot, matched, policy.maxVerifyAttempts());
             switch (outcome) {

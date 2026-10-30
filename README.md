@@ -66,6 +66,7 @@ Configuration is in `application.yml`, bound and validated with immutable `@Conf
 | Setting | Environment variable | Default |
 | --- | --- | --- |
 | OTP length | OTP_CODE_LENGTH | 6 |
+| Per-request length override | JSON request field codeLength | optional, uses OTP_CODE_LENGTH |
 | OTP lifetime | OTP_TTL | 120s |
 | Verification attempt limit | OTP_MAX_VERIFY_ATTEMPTS | 3 |
 | Resend cooldown | OTP_RESEND_COOLDOWN | 60s |
@@ -97,7 +98,7 @@ Request an OTP:
 ```sh
 curl -i -X POST http://localhost:8080/api/v1/otp/request \
   -H 'Content-Type: application/json' \
-  -d '{"phoneNumber":"+989121234567"}'
+  -d '{"phoneNumber":"+989121234567","codeLength":8}'
 ```
 
 HTTP 200 in production (the code field is omitted, not returned as null):
@@ -109,17 +110,17 @@ HTTP 200 in production (the code field is omitted, not returned as null):
 HTTP 200 in development:
 
 ```json
-{"expiresInSeconds":120,"resendAvailableInSeconds":60,"code":"001234"}
+{"expiresInSeconds":120,"resendAvailableInSeconds":60,"code":"00123456"}
 ```
 
-Both request responses include `Cache-Control: no-store`. The development code is a string and preserves leading zeros; it uses the configured OTP length and is returned only after successful Redis storage.
+The optional integer `codeLength` accepts 4–10. Omitting it or sending null uses the configured `otp.code-length` default. Each OTP stores its chosen length in Redis, so verification works even when the requested length differs from the global default. Both request responses include `Cache-Control: no-store`. The development code is a string and preserves leading zeros; it is returned only after successful Redis storage.
 
 Verify using the SMS code (or the code returned in the development response):
 
 ```sh
 curl -i -X POST http://localhost:8080/api/v1/otp/verify \
   -H 'Content-Type: application/json' \
-  -d '{"phoneNumber":"+989121234567","code":"123456"}'
+  -d '{"phoneNumber":"+989121234567","code":"00123456"}'
 ```
 
 HTTP 200:
@@ -128,7 +129,7 @@ HTTP 200:
 {"verified":true}
 ```
 
-E.164 validation accepts a leading `+`, a nonzero first digit, and 2–15 total ASCII digits. It checks syntax, not whether a number exists. The code must match the configured length; malformed input does not consume verification attempts. Unknown JSON fields are rejected. Issuance timing is the configured validity period, counted from Redis storage; SMS delivery time reduces the remaining lifetime.
+E.164 validation accepts a leading `+`, a nonzero first digit, and 2–15 total ASCII digits. It checks syntax, not whether a number exists. Verification codes must match the length stored with the issued OTP; malformed input does not consume verification attempts. Fractional or out-of-range request lengths return `VALIDATION_ERROR`. Unknown JSON fields are rejected. Existing plaintext Redis OTP entries without length metadata remain readable until expiry. Issuance timing is the configured validity period, counted from Redis storage; SMS delivery time reduces the remaining lifetime.
 
 Failures use RFC 7807 `application/problem+json`:
 

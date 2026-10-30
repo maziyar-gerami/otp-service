@@ -53,7 +53,7 @@ class RedisAdaptersIT {
 
     StoredOtp issue(String version, Duration ttl) {
         assertThat(limiter.acquire(phone, version, minute, 100, minute).status()).isEqualTo(RateLimiterPort.Status.ALLOWED);
-        var otp = new StoredOtp(version, "123456", 0, Instant.parse("2026-01-01T00:00:00Z"));
+        var otp = new StoredOtp(version, "123456", 0, Instant.parse("2026-01-01T00:00:00Z"), 6);
         assertThat(store.save(phone, otp, ttl)).isTrue();
         return otp;
     }
@@ -70,6 +70,25 @@ class RedisAdaptersIT {
         assertThat(redis.getExpire(keys.otp(phone), TimeUnit.MILLISECONDS)).isBetween(1L, 300L);
         await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> assertThat(store.find(phone)).isEmpty());
         assertThat(store.completeVerification(phone, otp, true, 3)).isEqualTo(OtpStorePort.VerificationOutcome.NOT_FOUND);
+    }
+
+    @Test
+    void storesRequestLengthIndependentlyOfEncodedCodeAndResetsItOnReplacement() {
+        issue("old-six", minute);
+        limiter.releaseCooldown(phone, "old-six");
+        limiter.acquire(phone, "new-eight", minute, 100, minute);
+        var replacement = new StoredOtp("new-eight", "future-codec-output", 0, Instant.EPOCH, 8);
+        assertThat(store.save(phone, replacement, minute)).isTrue();
+        assertThat(store.find(phone)).contains(replacement);
+        assertThat(redis.<String, String>opsForHash().get(keys.otp(phone), "codeLength")).isEqualTo("8");
+    }
+
+    @Test
+    void readsLegacyPlaintextEntriesWithoutLengthMetadata() {
+        var otp = issue("legacy", minute);
+        redis.opsForHash().delete(keys.otp(phone), "codeLength");
+        assertThat(store.find(phone)).contains(otp);
+        assertThat(verifier(3).verify(new VerifyOtpCommand(phone, new OtpCode("123456"))).verified()).isTrue();
     }
 
     @Test
@@ -138,7 +157,7 @@ class RedisAdaptersIT {
 
     @Test
     void expiredOrStaleReservationCannotSave() {
-        var otp = new StoredOtp("no-reservation", "123456", 0, Instant.EPOCH);
+        var otp = new StoredOtp("no-reservation", "123456", 0, Instant.EPOCH, 6);
         assertThat(store.save(phone, otp, minute)).isFalse();
         assertThat(store.find(phone)).isEmpty();
         issue("owner", minute);

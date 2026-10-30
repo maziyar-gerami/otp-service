@@ -19,7 +19,7 @@ class DomainTest {
         var code = new OtpCode("001234");
         assertThat(code.value()).isEqualTo("001234");
         assertThat(code.toString()).isEqualTo("[REDACTED]");
-        var otp = new StoredOtp("version", code.value(), 0, Instant.EPOCH);
+        var otp = new StoredOtp("version", code.value(), 0, Instant.EPOCH, 6);
         assertThat(otp.toString()).doesNotContain(code.value());
         assertThat(otp.issuedAt()).isEqualTo(Instant.EPOCH);
     }
@@ -51,7 +51,10 @@ class DomainTest {
         assertThatNullPointerException().isThrownBy(() -> policy(6, null, 3, 3));
         assertThatIllegalArgumentException().isThrownBy(() -> policy(6, Duration.ofSeconds(1), 0, 3));
         assertThatIllegalArgumentException().isThrownBy(() -> policy(6, Duration.ofSeconds(1), 3, 0));
-        assertThatIllegalArgumentException().isThrownBy(() -> new StoredOtp("v", "123456", -1, Instant.EPOCH));
+        assertThatIllegalArgumentException().isThrownBy(() -> new StoredOtp("v", "123456", -1, Instant.EPOCH, 6));
+        for (int length : new int[]{3, 11}) {
+            assertThatIllegalArgumentException().isThrownBy(() -> new StoredOtp("v", "encoded", 0, Instant.EPOCH, length));
+        }
     }
 
     private OtpPolicy policy(int length, Duration ttl, int attempts, int requests) {

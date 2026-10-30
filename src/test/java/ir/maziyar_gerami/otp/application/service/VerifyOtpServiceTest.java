@@ -26,7 +26,7 @@ class VerifyOtpServiceTest {
     OtpCodec codec;
     final PhoneNumber phone = new PhoneNumber("+989121234567");
     final OtpCode code = new OtpCode("123456");
-    final StoredOtp otp = new StoredOtp("version", "encoded", 0, Instant.EPOCH);
+    final StoredOtp otp = new StoredOtp("version", "encoded", 0, Instant.EPOCH, 6);
     final VerifyOtpCommand command = new VerifyOtpCommand(phone, code);
     VerifyOtpService service;
 
@@ -43,6 +43,26 @@ class VerifyOtpServiceTest {
         when(store.completeVerification(phone, otp, true, 3)).thenReturn(OtpStorePort.VerificationOutcome.VERIFIED);
         assertThat(service.verify(command)).isEqualTo(new VerifyOtpResult(true));
         verify(store).completeVerification(phone, otp, true, 3);
+    }
+
+    @Test
+    void verifiesStoredRequestLengthRatherThanGlobalDefault() {
+        var generated = new OtpCode("00123456");
+        var requested = new StoredOtp("requested", "encoded-eight", 0, Instant.EPOCH, 8);
+        when(store.find(phone)).thenReturn(Optional.of(requested));
+        when(codec.matches(generated, "encoded-eight")).thenReturn(true);
+        when(store.completeVerification(phone, requested, true, 3)).thenReturn(OtpStorePort.VerificationOutcome.VERIFIED);
+        assertThat(service.verify(new VerifyOtpCommand(phone, generated)).verified()).isTrue();
+    }
+
+    @Test
+    void retryRechecksLengthAfterReplacement() {
+        var replacement = new StoredOtp("replacement", "encoded-eight", 0, Instant.EPOCH, 8);
+        when(store.find(phone)).thenReturn(Optional.of(otp)).thenReturn(Optional.of(replacement));
+        when(store.completeVerification(phone, otp, false, 3)).thenReturn(OtpStorePort.VerificationOutcome.RETRY);
+        assertError(ErrorCode.VALIDATION_ERROR);
+        verify(codec, never()).matches(any(), eq("encoded-eight"));
+        verify(store, never()).completeVerification(eq(phone), eq(replacement), anyBoolean(), anyInt());
     }
 
     @Test
@@ -67,7 +87,7 @@ class VerifyOtpServiceTest {
 
     @Test
     void retriesOnStaleSnapshotAndRecompares() {
-        var replacement = new StoredOtp("new", "new-encoded", 0, Instant.EPOCH);
+        var replacement = new StoredOtp("new", "new-encoded", 0, Instant.EPOCH, 6);
         when(store.find(phone)).thenReturn(Optional.of(otp), Optional.of(replacement));
         when(codec.matches(code, "encoded")).thenReturn(false);
         when(codec.matches(code, "new-encoded")).thenReturn(true);
@@ -87,9 +107,12 @@ class VerifyOtpServiceTest {
 
     @Test
     void wrongLengthIsValidationErrorAndDoesNotChargeAttempts() {
+        when(store.find(phone)).thenReturn(Optional.of(otp));
         assertThatThrownBy(() -> service.verify(new VerifyOtpCommand(phone, new OtpCode("1234"))))
                 .isInstanceOfSatisfying(OtpException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.VALIDATION_ERROR));
-        verifyNoInteractions(store, codec);
+        verify(store).find(phone);
+        verifyNoMoreInteractions(store);
+        verifyNoInteractions(codec);
     }
 
     private void assertError(ErrorCode expected) {

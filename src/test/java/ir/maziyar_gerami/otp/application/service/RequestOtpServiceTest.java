@@ -13,6 +13,8 @@ import ir.maziyar_gerami.otp.domain.*;
 import java.time.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,6 +71,32 @@ class RequestOtpServiceTest {
         assertThat(captor.getValue().attempts()).isZero();
         assertThat(captor.getValue().encodedCode()).isEqualTo("encoded");
         assertThat(captor.getValue().version()).isNotBlank();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {4, 8, 10})
+    void requestLengthOverridesDefaultForGenerationStorageAndSms(int length) {
+        allow();
+        var generated = new OtpCode("0".repeat(length));
+        when(generator.generate(length)).thenReturn(generated);
+        when(codec.encode(generated)).thenReturn("encoded");
+        when(store.save(eq(phone), any(), eq(policy.ttl()))).thenReturn(true);
+
+        assertThat(service.request(new RequestOtpCommand(phone, length)))
+                .isEqualTo(new RequestOtpResult(120, 60));
+        var captor = ArgumentCaptor.forClass(StoredOtp.class);
+        verify(store).save(eq(phone), captor.capture(), eq(policy.ttl()));
+        assertThat(captor.getValue().codeLength()).isEqualTo(length);
+        verify(sender).send(phone, generated, policy.ttl());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 3, 11})
+    void invalidRequestLengthDoesNotReserveGenerateStoreOrSend(int length) {
+        assertThatThrownBy(() -> service.request(new RequestOtpCommand(phone, length)))
+                .isInstanceOfSatisfying(OtpException.class,
+                        e -> assertThat(e.code()).isEqualTo(ErrorCode.VALIDATION_ERROR));
+        verifyNoInteractions(limiter, generator, codec, store, sender);
     }
 
     @Test

@@ -65,9 +65,18 @@ class OtpFlowIT {
     }
 
     String request(String phone) throws Exception {
+        return request(phone, null);
+    }
+
+    String request(String phone, Integer codeLength) throws Exception {
         SMS.enqueue(new MockResponse().setResponseCode(202));
+        var body = new java.util.HashMap<String, Object>();
+        body.put("phoneNumber", phone);
+        if (codeLength != null) {
+            body.put("codeLength", codeLength);
+        }
         mvc.perform(post("/api/v1/otp/request").contentType("application/json")
-                        .content(json.writeValueAsString(java.util.Map.of("phoneNumber", phone))))
+                        .content(json.writeValueAsString(body)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.expiresInSeconds").value(2))
                 .andExpect(jsonPath("$.resendAvailableInSeconds").value(1)).andExpect(jsonPath("$.code").doesNotExist());
         var sms = SMS.takeRequest(3, TimeUnit.SECONDS);
@@ -78,6 +87,16 @@ class OtpFlowIT {
     org.springframework.test.web.servlet.ResultActions verify(String phone, String code) throws Exception {
         return mvc.perform(post("/api/v1/otp/verify").contentType("application/json")
                 .content(json.writeValueAsString(java.util.Map.of("phoneNumber", phone, "code", code))));
+    }
+
+    @Test
+    void productionSendsRequestedLengthBySmsAndVerifiesAgainstStoredLength() throws Exception {
+        String phone = "+989121234508";
+        String code = request(phone, 8);
+        assertThat(code).matches("[0-9]{8}");
+        verify(phone, "123456").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        verify(phone, code).andExpect(status().isOk()).andExpect(jsonPath("$.verified").value(true));
     }
 
     @Test
