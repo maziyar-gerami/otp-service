@@ -1,4 +1,11 @@
 # Development returns OTP codes in request responses and bypasses the SMS sender.
+# Activate with: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
 logging:
   level:
     ir.maziyar_gerami.otp: INFO
