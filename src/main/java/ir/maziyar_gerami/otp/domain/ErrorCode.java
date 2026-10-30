@@ -1,0 +1,13 @@
+package ir.maziyar_gerami.otp.domain;
+
+public enum ErrorCode {
+
+    OTP_NOT_FOUND_OR_EXPIRED,
+    OTP_INVALID,
+    OTP_ATTEMPTS_EXCEEDED,
+    OTP_RATE_LIMITED,
+    OTP_COOLDOWN_ACTIVE,
+    VALIDATION_ERROR,
+    OTP_DELIVERY_FAILED,
+    OTP_SERVICE_UNAVAILABLE
+}

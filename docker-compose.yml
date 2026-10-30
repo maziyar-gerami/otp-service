@@ -1,0 +1,37 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      SMS_BASE_URL: ${SMS_BASE_URL:-http://localhost:9090}
+      SMS_API_KEY: ${SMS_API_KEY:-}
+      OTP_CODE_LENGTH: ${OTP_CODE_LENGTH:-6}
+      OTP_TTL: ${OTP_TTL:-120s}
+      OTP_MAX_VERIFY_ATTEMPTS: ${OTP_MAX_VERIFY_ATTEMPTS:-3}
+      OTP_RESEND_COOLDOWN: ${OTP_RESEND_COOLDOWN:-60s}
+      OTP_RATE_LIMIT_MAX_REQUESTS: ${OTP_RATE_LIMIT_MAX_REQUESTS:-3}
+      OTP_RATE_LIMIT_WINDOW: ${OTP_RATE_LIMIT_WINDOW:-10m}
+      OTP_KEY_PREFIX: ${OTP_KEY_PREFIX:-otp:}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+  redis:
+    image: redis:7.4-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    command: ["/bin/sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --save '' --appendonly no"]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped

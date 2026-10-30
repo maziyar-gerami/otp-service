@@ -1,0 +1,4 @@
+# Development deliberately exposes OTP codes in masked-phone logs.
+logging:
+  level:
+    ir.maziyar_gerami.otp: INFO

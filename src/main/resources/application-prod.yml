@@ -1,0 +1,7 @@
+# Do not enable HTTP wire logging or request-body logging in production.
+logging:
+  level:
+    root: INFO
+    org.springframework.web: WARN
+    org.springframework.data.redis: WARN
+    io.lettuce.core: WARN

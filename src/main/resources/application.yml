@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: otp-service
+  profiles:
+    default: prod
+  threads:
+    virtual:
+      enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
+      timeout: ${REDIS_TIMEOUT:2s}
+  mvc:
+    problemdetails:
+      enabled: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+otp:
+  code-length: ${OTP_CODE_LENGTH:6}
+  ttl: ${OTP_TTL:120s}
+  max-verify-attempts: ${OTP_MAX_VERIFY_ATTEMPTS:3}
+  resend-cooldown: ${OTP_RESEND_COOLDOWN:60s}
+  key-prefix: ${OTP_KEY_PREFIX:otp:}
+  rate-limit:
+    max-requests: ${OTP_RATE_LIMIT_MAX_REQUESTS:3}
+    window: ${OTP_RATE_LIMIT_WINDOW:10m}
+sms:
+  base-url: ${SMS_BASE_URL:http://localhost:9090}
+  send-path: ${SMS_SEND_PATH:/messages}
+  api-key: ${SMS_API_KEY:}
+  connect-timeout: ${SMS_CONNECT_TIMEOUT:2s}
+  read-timeout: ${SMS_READ_TIMEOUT:5s}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,redis
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: OTP Service
+    version: 1.0.0
+logging:
+  structured:
+    format:
+      console: logstash
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:true}
+  swagger-ui:
+    enabled: ${OPENAPI_ENABLED:true}
