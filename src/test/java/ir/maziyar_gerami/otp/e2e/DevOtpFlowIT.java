@@ -41,33 +41,32 @@ class DevOtpFlowIT {
         registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
         registry.add("spring.data.redis.password", () -> "");
         registry.add("otp.key-prefix", () -> "dev-e2e:");
-        registry.add("otp.code-length", () -> "8");
         registry.add("sms.api-key", () -> "");
     }
 
     @Test
     void requestLengthOverridesConfiguredDefaultAndReturnedCodeVerifies() throws Exception {
-        when(generator.generate(6)).thenReturn(new OtpCode("001234"));
-        String request = "{\"phoneNumber\":\"+989121234507\",\"codeLength\":6}";
+        when(generator.generate(8)).thenReturn(new OtpCode("00123456"));
+        String request = "{\"phoneNumber\":\"+989121234507\",\"codeLength\":8}";
         mvc.perform(post("/api/v1/otp/request").contentType("application/json").content(request))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("001234"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("00123456"));
         mvc.perform(post("/api/v1/otp/verify").contentType("application/json")
-                        .content("{\"phoneNumber\":\"+989121234507\",\"code\":\"001234\"}"))
+                        .content("{\"phoneNumber\":\"+989121234507\",\"code\":\"00123456\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.verified").value(true));
-        verify(generator).generate(6);
+        verify(generator).generate(8);
         verifyNoInteractions(sender);
     }
 
     @Test
-    void returnsExactConfiguredLengthCodeWithoutSmsAndVerifiesItOnlyOnce() throws Exception {
-        when(generator.generate(8)).thenReturn(new OtpCode("00123456"));
+    void omittedLengthDefaultsToSixDigitsWithoutSmsAndVerifiesOnlyOnce() throws Exception {
+        when(generator.generate(6)).thenReturn(new OtpCode("001234"));
         String request = "{\"phoneNumber\":\"+989121234506\"}";
-        String verification = "{\"phoneNumber\":\"+989121234506\",\"code\":\"00123456\"}";
+        String verification = "{\"phoneNumber\":\"+989121234506\",\"code\":\"001234\"}";
 
         mvc.perform(post("/api/v1/otp/request").contentType("application/json").content(request))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.expiresInSeconds").value(120))
                 .andExpect(jsonPath("$.resendAvailableInSeconds").value(60))
-                .andExpect(jsonPath("$.code").value("00123456"))
+                .andExpect(jsonPath("$.code").value("001234"))
                 .andExpect(header().string("Cache-Control", "no-store"));
 
         mvc.perform(post("/api/v1/otp/verify").contentType("application/json").content(verification))
@@ -77,7 +76,20 @@ class DevOtpFlowIT {
         mvc.perform(post("/api/v1/otp/request").contentType("application/json").content(request))
                 .andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.code").value("OTP_COOLDOWN_ACTIVE"));
 
-        verify(generator).generate(8);
+        verify(generator).generate(6);
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    void nullLengthAlsoDefaultsToSixDigits() throws Exception {
+        when(generator.generate(6)).thenReturn(new OtpCode("006789"));
+        mvc.perform(post("/api/v1/otp/request").contentType("application/json")
+                        .content("{\"phoneNumber\":\"+989121234509\",\"codeLength\":null}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value("006789"));
+        mvc.perform(post("/api/v1/otp/verify").contentType("application/json")
+                        .content("{\"phoneNumber\":\"+989121234509\",\"code\":\"006789\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.verified").value(true));
+        verify(generator).generate(6);
         verifyNoInteractions(sender);
     }
 }

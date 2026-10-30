@@ -113,7 +113,7 @@ HTTP 200 in development:
 {"expiresInSeconds":120,"resendAvailableInSeconds":60,"code":"00123456"}
 ```
 
-The optional integer `codeLength` accepts 4–10. Omitting it or sending null uses the configured `otp.code-length` default. Each OTP stores its chosen length in Redis, so verification works even when the requested length differs from the global default. Both request responses include `Cache-Control: no-store`. The development code is a string and preserves leading zeros; it is returned only after successful Redis storage.
+The optional integer `codeLength` accepts 4–10. Omitting it or sending null uses the configured `otp.code-length` default, which is **6 digits** out of the box. For example, `{"phoneNumber":"+989121234567"}` generates a six-digit OTP with the default configuration. Each OTP stores its chosen length in Redis, so verification works even when the requested length differs from the global default. Both request responses include `Cache-Control: no-store`. The development code is a string and preserves leading zeros; it is returned only after successful Redis storage.
 
 Verify using the SMS code (or the code returned in the development response):
 
