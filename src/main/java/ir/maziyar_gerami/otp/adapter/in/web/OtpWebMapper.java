@@ -22,7 +22,8 @@ public final class OtpWebMapper {
     }
 
     public static RequestOtpResponse response(RequestOtpResult result) {
-        return new RequestOtpResponse(result.expiresInSeconds(), result.resendAvailableInSeconds());
+        return new RequestOtpResponse(result.expiresInSeconds(), result.resendAvailableInSeconds(),
+                result.code() == null ? null : result.code().value());
     }
 
     public static VerifyOtpResponse response(VerifyOtpResult result) {

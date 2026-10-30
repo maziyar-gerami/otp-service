@@ -4,6 +4,7 @@ import ir.maziyar_gerami.otp.adapter.out.redis.*;
 import ir.maziyar_gerami.otp.adapter.out.security.*;
 import ir.maziyar_gerami.otp.adapter.out.sms.*;
 import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpUseCase;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.OtpDeliveryMode;
 import ir.maziyar_gerami.otp.application.port.in.verifyotp.VerifyOtpUseCase;
 import ir.maziyar_gerami.otp.application.port.out.otp.OtpCodec;
 import ir.maziyar_gerami.otp.application.port.out.otp.OtpGeneratorPort;
@@ -20,6 +21,8 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
@@ -68,9 +71,16 @@ public class OtpConfiguration {
     }
 
     @Bean
+    public OtpDeliveryMode otpDeliveryMode(Environment environment) {
+        return environment.acceptsProfiles(Profiles.of("dev & !prod"))
+                ? OtpDeliveryMode.DEVELOPMENT_RESPONSE : OtpDeliveryMode.SMS;
+    }
+
+    @Bean
     public RequestOtpUseCase requestOtp(OtpStorePort store, OtpSenderPort sender, OtpGeneratorPort generator,
-                                        RateLimiterPort limiter, OtpCodec codec, OtpPolicy policy, Clock clock) {
-        return new RequestOtpService(store, sender, generator, limiter, codec, policy, clock);
+                                        RateLimiterPort limiter, OtpCodec codec, OtpPolicy policy, Clock clock,
+                                        OtpDeliveryMode deliveryMode) {
+        return new RequestOtpService(store, sender, generator, limiter, codec, policy, clock, deliveryMode);
     }
 
     @Bean

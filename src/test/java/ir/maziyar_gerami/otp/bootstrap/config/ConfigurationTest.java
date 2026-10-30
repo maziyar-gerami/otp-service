@@ -2,6 +2,7 @@ package ir.maziyar_gerami.otp.bootstrap.config;
 
 import ir.maziyar_gerami.otp.adapter.out.sms.*;
 import ir.maziyar_gerami.otp.application.port.out.otp.OtpSenderPort;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.OtpDeliveryMode;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
 import java.net.URI;
@@ -35,10 +36,11 @@ class ConfigurationTest {
     }
 
     @Test
-    void devUsesLoggingSender() {
-        runner("dev").run(context -> {
+    void devReturnsCodesWithoutRequiringSmsCredentials() {
+        runner("dev").withPropertyValues("sms.api-key=").run(context -> {
             assertThat(context).hasNotFailed().hasSingleBean(OtpSenderPort.class);
             assertThat(context.getBean(OtpSenderPort.class)).isInstanceOf(LoggingOtpSender.class);
+            assertThat(context.getBean(OtpDeliveryMode.class)).isEqualTo(OtpDeliveryMode.DEVELOPMENT_RESPONSE);
             assertThat(context.getBean(OtpProperties.class).toPolicy().ttl()).isEqualTo(Duration.ofSeconds(120));
         });
     }
@@ -49,6 +51,7 @@ class ConfigurationTest {
             runner(profile).run(context -> {
                 assertThat(context).hasNotFailed().hasSingleBean(OtpSenderPort.class);
                 assertThat(context.getBean(OtpSenderPort.class)).isInstanceOf(HttpOtpSender.class);
+                assertThat(context.getBean(OtpDeliveryMode.class)).isEqualTo(OtpDeliveryMode.SMS);
             });
         }
     }

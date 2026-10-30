@@ -1,4 +1,4 @@
-# Development deliberately exposes OTP codes in masked-phone logs.
+# Development returns OTP codes in request responses and bypasses the SMS sender.
 logging:
   level:
     ir.maziyar_gerami.otp: INFO

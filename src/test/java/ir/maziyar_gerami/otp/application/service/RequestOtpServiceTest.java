@@ -2,6 +2,7 @@ package ir.maziyar_gerami.otp.application.service;
 
 import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpCommand;
 import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpResult;
+import ir.maziyar_gerami.otp.application.port.in.requestotp.OtpDeliveryMode;
 import ir.maziyar_gerami.otp.application.port.out.otp.OtpCodec;
 import ir.maziyar_gerami.otp.application.port.out.otp.OtpGeneratorPort;
 import ir.maziyar_gerami.otp.application.port.out.otp.OtpSenderPort;
@@ -68,6 +69,40 @@ class RequestOtpServiceTest {
         assertThat(captor.getValue().attempts()).isZero();
         assertThat(captor.getValue().encodedCode()).isEqualTo("encoded");
         assertThat(captor.getValue().version()).isNotBlank();
+    }
+
+    @Test
+    void developmentReturnsExactGeneratedCodeAfterSavingAndNeverSendsSms() {
+        service = new RequestOtpService(store, sender, generator, limiter, codec, policy,
+                Clock.fixed(now, ZoneOffset.UTC), OtpDeliveryMode.DEVELOPMENT_RESPONSE);
+        allow();
+        var generated = new OtpCode("001234");
+        when(generator.generate(6)).thenReturn(generated);
+        when(codec.encode(generated)).thenReturn("encoded-leading-zero-code");
+        when(store.save(eq(phone), any(), eq(policy.ttl()))).thenReturn(true);
+
+        var result = service.request(new RequestOtpCommand(phone));
+
+        assertThat(result).isEqualTo(new RequestOtpResult(120, 60, generated));
+        assertThat(result.code().value()).isEqualTo("001234");
+        assertThat(result.toString()).doesNotContain("001234");
+        var captor = ArgumentCaptor.forClass(StoredOtp.class);
+        verify(store).save(eq(phone), captor.capture(), eq(policy.ttl()));
+        assertThat(captor.getValue().encodedCode()).isEqualTo("encoded-leading-zero-code");
+        verifyNoInteractions(sender);
+    }
+
+    @Test
+    void developmentDoesNotReturnCodeWhenStorageFails() {
+        service = new RequestOtpService(store, sender, generator, limiter, codec, policy,
+                Clock.fixed(now, ZoneOffset.UTC), OtpDeliveryMode.DEVELOPMENT_RESPONSE);
+        allow();
+        prepareCode();
+        when(store.save(eq(phone), any(), any())).thenReturn(false);
+        assertThatThrownBy(() -> service.request(new RequestOtpCommand(phone)))
+                .isInstanceOfSatisfying(OtpException.class,
+                        e -> assertThat(e.code()).isEqualTo(ErrorCode.OTP_SERVICE_UNAVAILABLE));
+        verifyNoInteractions(sender);
     }
 
     @Test

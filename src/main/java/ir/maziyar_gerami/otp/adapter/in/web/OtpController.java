@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -35,9 +37,10 @@ public class OtpController {
     }
 
     @PostMapping("/request")
-    @Operation(summary = "Request an OTP by SMS")
-    public RequestOtpResponse request(@Valid @RequestBody RequestOtpRequest request) {
-        return OtpWebMapper.response(requestOtp.request(OtpWebMapper.command(request)));
+    @Operation(summary = "Request an OTP", description = "Sends SMS in production; returns code without SMS in dev.")
+    public ResponseEntity<RequestOtpResponse> request(@Valid @RequestBody RequestOtpRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(OtpWebMapper.response(requestOtp.request(OtpWebMapper.command(request))));
     }
 
     @PostMapping("/verify")

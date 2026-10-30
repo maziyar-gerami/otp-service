@@ -1,6 +1,7 @@
 package ir.maziyar_gerami.otp.adapter.in.web;
 
 import ir.maziyar_gerami.otp.adapter.in.web.requestotp.RequestOtpRequest;
+import ir.maziyar_gerami.otp.adapter.in.web.requestotp.RequestOtpResponse;
 import ir.maziyar_gerami.otp.adapter.in.web.verifyotp.VerifyOtpRequest;
 import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpCommand;
 import ir.maziyar_gerami.otp.application.port.in.requestotp.RequestOtpResult;
@@ -43,8 +44,21 @@ class OtpControllerTest {
         when(requestOtp.request(any())).thenReturn(new RequestOtpResult(120, 60));
         mvc.perform(post("/api/v1/otp/request").contentType(MediaType.APPLICATION_JSON).content(REQUEST))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.expiresInSeconds").value(120))
+                .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.resendAvailableInSeconds").value(60)).andExpect(jsonPath("$.code").doesNotExist());
         verify(requestOtp).request(new RequestOtpCommand(new PhoneNumber(PHONE)));
+    }
+
+    @Test
+    void developmentResultReturnsExactCodeIncludingLeadingZeros() throws Exception {
+        when(requestOtp.request(any())).thenReturn(new RequestOtpResult(120, 60, new OtpCode("001234")));
+        mvc.perform(post("/api/v1/otp/request").contentType(MediaType.APPLICATION_JSON).content(REQUEST))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.expiresInSeconds").value(120))
+                .andExpect(jsonPath("$.resendAvailableInSeconds").value(60))
+                .andExpect(jsonPath("$.code").value("001234"))
+                .andExpect(header().string("Cache-Control", "no-store"));
+        org.assertj.core.api.Assertions.assertThat(new RequestOtpResponse(120, 60, "001234").toString())
+                .doesNotContain("001234");
     }
 
     @Test

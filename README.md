@@ -23,7 +23,7 @@ flowchart LR
 
 The domain and application contain no Spring imports. Adapters do not depend on other adapters. Bootstrap owns composition. ArchUnit enforces these rules.
 
-A request atomically reserves cooldown and charges a fixed-window rate limit. It generates a numeric code (leading zeros are preserved), saves a versioned Redis hash with TTL, then sends SMS. A new issuance replaces the previous hash and resets attempts. Saving requires ownership of the reservation, protecting against delayed requests.
+A request atomically reserves cooldown and charges a fixed-window rate limit. It generates a numeric code (leading zeros are preserved), saves a versioned Redis hash with TTL, then sends SMS in production. In development, the application bypasses the SMS sender and returns the exact code in the response. A new issuance replaces the previous hash and resets attempts. Saving requires ownership of the reservation, protecting against delayed requests.
 
 Verification reads a snapshot, compares the code using Java's `MessageDigest.isEqual`, then applies the result with a Lua compare-and-set on the issuance version and attempt counter. Redis checks existence again inside the script. Correct verification deletes immediately; concurrent correct verifications have exactly one winner. Incorrect verification increments atomically without extending TTL and deletes at the attempt limit. Stale snapshots trigger bounded retries and a fresh comparison.
 
@@ -42,7 +42,7 @@ docker run --name otp-local-redis --rm -p 127.0.0.1:6379:6379 redis:7.4-alpine
 SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
 ```
 
-In `dev`, the code is printed only by the development SMS sender, with a masked phone. Never enable `dev` on a production deployment. Activating `prod` together with `dev` selects HTTP SMS and disables the logging sender.
+In `dev`, OTP request responses include the exact generated `code`; the SMS sender is not called and no SMS credentials are required. Redis storage, TTL, cooldown, rate limits, and verification still work normally. Never enable `dev` on a production deployment. Activating `prod` together with `dev` selects HTTP SMS and omits the code from responses. A logging sender remains available in development wiring but is bypassed by the request use case.
 
 ## Docker Compose
 
@@ -100,13 +100,21 @@ curl -i -X POST http://localhost:8080/api/v1/otp/request \
   -d '{"phoneNumber":"+989121234567"}'
 ```
 
-HTTP 200:
+HTTP 200 in production (the code field is omitted, not returned as null):
 
 ```json
 {"expiresInSeconds":120,"resendAvailableInSeconds":60}
 ```
 
-Verify using the SMS code (or development log):
+HTTP 200 in development:
+
+```json
+{"expiresInSeconds":120,"resendAvailableInSeconds":60,"code":"001234"}
+```
+
+Both request responses include `Cache-Control: no-store`. The development code is a string and preserves leading zeros; it uses the configured OTP length and is returned only after successful Redis storage.
+
+Verify using the SMS code (or the code returned in the development response):
 
 ```sh
 curl -i -X POST http://localhost:8080/api/v1/otp/verify \
@@ -186,7 +194,7 @@ mvn verify                       # All tests, package, coverage gate
 mvn -DskipTests package           # Package only; not a release validation
 ```
 
-Tests cover domain invariants, use cases with Mockito ports, MockMvc errors and headers, SMS payloads and failures with MockWebServer, real Redis expiry/replacement/attempt counters, concurrent admissions and verification, and full request → SMS → verify flows. End-to-end tests use the production HTTP sender against a stub SMS server.
+Tests cover domain invariants, use cases with Mockito ports, MockMvc errors and headers, SMS payloads and failures with MockWebServer, real Redis expiry/replacement/attempt counters, concurrent admissions and verification, and full request → SMS → verify flows. Production end-to-end tests use the HTTP sender against a stub SMS server and assert that codes are absent from responses. Development end-to-end tests verify the exact returned code, configured length, leading zeros, single use, cooldown, and zero SMS calls. Profile tests ensure production takes precedence when both dev and prod are active.
 
 The original standalone `src/Main.java` starter is preserved. Maven and IntelliJ use `src/main/java` and `src/test/java` as Java source roots. Import or reload `pom.xml` in IntelliJ to resolve Maven dependencies.
 
